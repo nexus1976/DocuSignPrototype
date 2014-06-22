@@ -1,0 +1,31 @@
+﻿@using System.Data.Entity;
+@model IEnumerable<Prototype.DocuSign.DAL.Document>
+
+<div @(Model.Count() > 0 ? "" : "hidden=\"hidden\"")>
+    <table class="table table-responsive">
+        <tr>
+            <td><b>File Name</b></td>
+            <td><b>Sent To</b></td>
+            <td><b>Sent Date</b></td>
+            <td><b>Status</b></td>
+            <td><b>Envelope ID</b></td>
+            <td></td>
+        </tr>
+        @foreach (var item in Model)
+        {
+            <tr id="row-@item.DocuSignEnvelopId">
+                <td>@Html.ActionLink(item.DocumentName, "ShowDocument", "Home", new { envelopeId = item.DocuSignEnvelopId }, new { target = "_blank" })</td>
+                <td>@(item.SentToName + " - " + item.SentToEmail)</td>
+                <td>@item.RequestedDate</td>
+                <td>@item.Status</td>
+                <td>@item.DocuSignEnvelopId</td>
+                <td><a href="#" class="RemoveLink" id="@item.DocuSignEnvelopId" data-id="@item.DocuSignEnvelopId"><span class="glyphicon glyphicon-remove"></span></a>
+            </tr>
+        }
+    </table>
+</div>
+<div @(Model.Count() > 0 ? "hidden=\"hidden\"" : "") class="panel-body">
+    <p>
+        No documents are present for the current user.
+    </p>
+</div>

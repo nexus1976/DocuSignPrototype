@@ -1,0 +1,137 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+@model Prototype.DocuSign.Models.IHomeModel
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#UseSignatureXY").change(function () {
+            if (this.checked) {
+                $("#divSigCord").show();
+            } else {
+                $("#divSigCord").hide();
+            }
+        });
+        $("#dialog").dialog({
+            autoOpen: false,
+            position: 'center',
+            title: 'Manage Uploaded Document',
+            draggable: true,
+            width: 800,
+            height: 700,
+            resizable: true,
+            modal: true
+        });
+
+        var popUrl = $("#DocuSignPopoutURL").val();
+
+        if (popUrl) {
+            $("#dialog").dialog("open");
+        }
+
+        $(".RemoveLink").click(function () {
+            var recordToDelete = $(this).attr("data-id");
+            if (recordToDelete != '') {
+                var flag = confirm("Are you sure you want to delete the document with an envelope id of " + recordToDelete + " ?");
+                if (flag) {
+                    $.ajax({
+                        url: "@Url.Action("DeleteDocument", "Home")",
+                        type: "POST",
+                        data: { envelopeId: recordToDelete },
+                        dataType: "json",
+                        success: function (result) {
+                            $("#row-" + recordToDelete).fadeOut("slow");
+                        },
+                        error: function() {alert("Oops...something went wrong when trying to delete the document. Please try again.")}
+                    });
+                }
+            }
+        });
+    });
+</script>
+
+<div class="jumbotron">
+    @Html.HiddenFor(model => model.DocuSignPopoutURL)
+    <h2>Use DocuSign To Request A Signature</h2>
+    <p class="lead">Test developer sandbox functionality of DocuSign SaaS.</p>
+
+    <div @(Model.IsLoggedIn ? "hidden=\"hidden\"" : "")>
+        @using (Html.BeginForm("Login", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="input-groupleader input-group">
+                <span class="inputleader input-group-addon glyphicon glyphicon-user"></span>
+                @Html.TextBoxFor(model => model.CurrentUser, new { @class = "form-control", placeholder = "Login User ID", maxlength = "50" })
+            </div>
+            <p></p>
+            <p><input type="submit" class="btn btn-default" id="btnLogin" value="Login" /></p>
+        }
+    </div>
+
+    <div @(Model.IsLoggedIn ? "" : "hidden=\"hidden\"") >
+        @using (Html.BeginForm("SubmitDocusign", "Home", FormMethod.Post, new { enctype = "multipart/form-data" }))
+        {
+            @Html.AntiForgeryToken()
+            <div class="input-groupleader input-group">
+                <span class="inputleader input-group-addon glyphicon glyphicon-user"></span>
+                @Html.TextBoxFor(model => model.SendToName, new { @class = "form-control", placeholder = "Send To Name", maxlength = "100" })
+            </div>
+            <div class="input-groupleader input-group">
+                <span class="inputleader input-group-addon">@@</span>
+                @Html.TextBoxFor(model => model.SendToEmail, new { @class = "form-control", placeholder = "Send To Email Address", maxlength = "250" })
+            </div>
+            <div class="input-groupleader input-group">
+                <span class="inputleader input-group-addon glyphicon glyphicon-file"></span>
+                <input id="file" name="file" type="file" class="filebrowser" placeholder="File To Send" />
+            </div>
+            <p></p>
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4>
+                        <span class="label label-default">Specify Signature Coordinates</span>
+                        @Html.CheckBoxFor(model => model.UseSignatureXY)
+                    </h4>
+                </div>
+                <div class="panel-body" @(Model.UseSignatureXY ? "" : "hidden=\"hidden\"") id="divSigCord" name="divSigCord">
+                    <div class="input-groupleader input-group">
+                        <span class="inputleader input-group-addon glyphicon glyphicon-th-list"></span>
+                        @Html.TextBoxFor(model => model.SignaturePageNumber, new { @class = "form-control", placeholder = "Page Number", maxlength = "5" })
+                    </div>
+                    <div class="input-groupleader input-group">
+                        <span class="inputleader input-group-addon glyphicon glyphicon-resize-horizontal"></span>
+                        @Html.TextBoxFor(model => model.SignatureX, new { @class = "form-control", placeholder = "X Coordinate", maxlength = "10" })
+                    </div>
+                    <div class="input-groupleader input-group">
+                        <span class="inputleader input-group-addon glyphicon glyphicon-resize-vertical"></span>
+                        @Html.TextBoxFor(model => model.SignatureY, new { @class = "form-control", placeholder = "Y Coordinate", maxlength = "10" })
+                    </div>
+                </div>
+            </div>
+            <p></p>
+            <p><input type="submit" class="btn btn-default" id="btnTest" value="Send Document" /></p>
+        }
+    </div>
+</div>
+
+<div class="alert alert-success" @(!string.IsNullOrEmpty(Model.StatusMessage) ? "" : "hidden=\"hidden\"")>
+    @Html.DisplayTextFor(m => m.StatusMessage)
+</div>
+<div class="alert alert-danger" @(!string.IsNullOrEmpty(Model.ErrorMessage) ? "" : "hidden=\"hidden\"")>
+    @Html.DisplayTextFor(m => m.ErrorMessage)
+</div>
+<div @(Model.IsLoggedIn ? "" : "hidden=\"hidden\"") class="panel panel-primary">
+    @using (Html.BeginForm("Index", "Home", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <div class="panel panel-heading" style="clear:both; overflow:hidden">
+            <b><em>Documents for @Model.CurrentUser</em></b>
+            <input id="btnRefresh" name="btnRefresh" type="submit" class="btn btn-default floatright" value="Refresh" />
+        </div>
+        @Html.Partial("_DocumentQueue", Model.Documents)
+    }
+</div>
+<div id="dialog" title="Manage Uploaded Document" @(string.IsNullOrWhiteSpace(Model.DocuSignPopoutURL) ? "style=\"display:none;\"" : "")>
+    <iframe frameborder="0" scrolling="no" width="800" height="700" src="@Model.DocuSignPopoutURL">
+    </iframe>
+</div>
+    
